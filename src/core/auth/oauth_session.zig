@@ -185,7 +185,7 @@ pub fn configuredIssuerUrl() ![]const u8 {
 }
 
 pub fn validateIssuerUrl(url: []const u8) !void {
-    _ = selectIssuerUrl(url);
+    _ = selectIssuerUrl(url) catch return error.InvalidOAuthIssuer;
 }
 
 pub fn isLoopbackE2EIssuer(url: []const u8) bool {
@@ -769,7 +769,7 @@ test "OAuth session mutation lock serializes independent handles" {
     );
 }
 
-test "oauth E2E issuer override accepts loopback HTTP only" {
+test "oauth issuer accepts HTTPS providers and loopback HTTP test providers" {
     try std.testing.expectEqualStrings(
         "http://127.0.0.1:43123",
         try selectIssuerUrl("http://127.0.0.1:43123"),
@@ -778,12 +778,10 @@ test "oauth E2E issuer override accepts loopback HTTP only" {
         "http://localhost:43123",
         try selectIssuerUrl("http://localhost:43123"),
     );
+    try std.testing.expectEqualStrings("https://example.com", try selectIssuerUrl("https://example.com"));
+    try std.testing.expectError(error.InvalidOAuthIssuer, selectIssuerUrl("http://example.com"));
     try std.testing.expectError(
-        error.InvalidE2EOAuthIssuer,
-        selectIssuerUrl("https://example.com"),
-    );
-    try std.testing.expectError(
-        error.InvalidE2EOAuthIssuer,
+        error.InvalidOAuthIssuer,
         selectIssuerUrl("http://127.0.0.1:43123@evil.example"),
     );
     try validateE2EEndpoint(
