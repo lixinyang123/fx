@@ -755,7 +755,7 @@ pub fn resolveChatUrl(fallback: []const u8, override: ?[]const u8) []const u8 {
     // explicitly configured HTTPS providers, while keeping HTTP restricted to
     // loopback development servers.
     const uri = std.Uri.parse(candidate) catch return fallback;
-    if (uri.user != null or uri.password != null or uri.fragment != null) return fallback;
+    if (uri.host == null or uri.user != null or uri.password != null or uri.fragment != null) return fallback;
     if (std.ascii.eqlIgnoreCase(uri.scheme, "https")) return candidate;
     if (!gateway_client.isLoopbackHttpUrl(candidate)) return fallback;
     return candidate;
