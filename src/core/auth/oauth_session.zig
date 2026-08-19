@@ -184,11 +184,11 @@ pub fn configuredIssuerUrl() ![]const u8 {
 }
 
 pub fn validateIssuerUrl(url: []const u8) !void {
-    _ = selectIssuerUrl(url) catch return error.InvalidOAuthIssuer;
+    validateProviderUrl(url) catch return error.InvalidOAuthIssuer;
 }
 
 pub fn validateEndpointUrl(url: []const u8) !void {
-    _ = selectIssuerUrl(url) catch return error.InvalidOAuthEndpoint;
+    validateProviderUrl(url) catch return error.InvalidOAuthEndpoint;
 }
 
 pub fn isLoopbackE2EIssuer(url: []const u8) bool {
@@ -204,13 +204,17 @@ pub fn validateE2EEndpoint(issuer_url: []const u8, endpoint: []const u8) !void {
 fn selectIssuerUrl(override: ?[]const u8) ![]const u8 {
     const raw = override orelse return error.OAuthIssuerMissing;
     const candidate = std.mem.trimEnd(u8, raw, "/");
+    try validateProviderUrl(candidate);
+    return candidate;
+}
+
+fn validateProviderUrl(candidate: []const u8) !void {
     const uri = std.Uri.parse(candidate) catch return error.InvalidOAuthIssuer;
     if (uri.user != null or uri.password != null or uri.host == null or
         (!std.ascii.eqlIgnoreCase(uri.scheme, "https") and !isLoopbackHttpUrl(candidate, true)))
     {
         return error.InvalidOAuthIssuer;
     }
-    return candidate;
 }
 
 fn isLoopbackHttpUrl(url: []const u8, require_origin: bool) bool {
