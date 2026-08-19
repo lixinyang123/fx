@@ -16,7 +16,7 @@ else
     struct {};
 
 const Allocator = std.mem.Allocator;
-const teams_endpoint = "https://api.vercel.com/v2/teams";
+const teams_endpoint_env = "FX_OAUTH_TEAMS_URL";
 const poll_wait_slice_ms: u64 = 100;
 pub const poll_request_timeout_ms: i64 = 15_000;
 const max_poll_interval_ms = std.math.maxInt(u64) / std.time.ns_per_ms;
@@ -463,7 +463,7 @@ fn prepareLogin(
     alloc: Allocator,
     transport: oauth_transport.Provider,
 ) !PreparedLogin {
-    var client_id = oauth_session.configuredClientId() orelse return LoginError.ClientIdMissing;
+    const client_id = oauth_session.configuredClientId() orelse return LoginError.ClientIdMissing;
     const issuer_url = try oauth_session.configuredIssuerUrl();
 
     var metadata = try oauth.discover(alloc, transport, issuer_url);
@@ -471,11 +471,7 @@ fn prepareLogin(
     try oauth_session.validateE2EEndpoint(issuer_url, metadata.device_authorization_endpoint);
     try oauth_session.validateE2EEndpoint(issuer_url, metadata.token_endpoint);
 
-    var device = oauth.requestDeviceAuthorization(alloc, transport, metadata, client_id) catch |err| fallback: {
-        if (err != oauth.OAuthError.InvalidClient or std.mem.eql(u8, client_id, oauth_session.default_client_id)) return err;
-        client_id = oauth_session.default_client_id;
-        break :fallback try oauth.requestDeviceAuthorization(alloc, transport, metadata, client_id);
-    };
+    var device = try oauth.requestDeviceAuthorization(alloc, transport, metadata, client_id);
     errdefer device.deinit(alloc);
     const owned_client_id = try alloc.dupe(u8, client_id);
     return .{
@@ -979,16 +975,12 @@ fn discardStdinLine() void {
 }
 
 fn fetchTeams(alloc: Allocator, access_token: []const u8, issuer_url: []const u8) !std.ArrayList(Team) {
+    const configured_endpoint = io_mod.getenv(teams_endpoint_env) orelse return std.ArrayList(Team).empty;
+    const endpoint = std.mem.trim(u8, configured_endpoint, " \t\r\n");
+    if (endpoint.len == 0) return std.ArrayList(Team).empty;
     if (comptime host_target.is_wasm) return fetchTeamsFromJsHost(alloc, access_token, issuer_url);
     var client: std.http.Client = .{ .allocator = alloc, .io = io_mod.getIo() };
     defer client.deinit();
-
-    const e2e_endpoint = if (oauth_session.isLoopbackE2EIssuer(issuer_url))
-        try std.fmt.allocPrint(alloc, "{s}/v2/teams", .{issuer_url})
-    else
-        null;
-    defer if (e2e_endpoint) |endpoint| alloc.free(endpoint);
-    const endpoint = e2e_endpoint orelse teams_endpoint;
 
     const auth_header = try std.fmt.allocPrint(alloc, "Bearer {s}", .{access_token});
     defer secret.zeroAndFree(alloc, auth_header);
@@ -1017,12 +1009,10 @@ fn fetchTeamsFromJsHost(
     access_token: []const u8,
     issuer_url: []const u8,
 ) !std.ArrayList(Team) {
-    const e2e_endpoint = if (oauth_session.isLoopbackE2EIssuer(issuer_url))
-        try std.fmt.allocPrint(alloc, "{s}/v2/teams", .{issuer_url})
-    else
-        null;
-    defer if (e2e_endpoint) |endpoint| alloc.free(endpoint);
-    const endpoint = e2e_endpoint orelse teams_endpoint;
+    _ = issuer_url;
+    const configured_endpoint = io_mod.getenv(teams_endpoint_env) orelse return std.ArrayList(Team).empty;
+    const endpoint = std.mem.trim(u8, configured_endpoint, " \t\r\n");
+    if (endpoint.len == 0) return std.ArrayList(Team).empty;
 
     var response = try js_host_auth.executeBearerGet(alloc, endpoint, access_token);
     defer response.deinit(alloc);

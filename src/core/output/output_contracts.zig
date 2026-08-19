@@ -659,7 +659,7 @@ pub const ModelListSnapshot = struct {
         if (!self.private_models_hidden) return null;
         const reason = self.public_only_reason orelse return "Using the public model catalog.";
         return switch (reason) {
-            .no_credential => "Using the public model catalog; sign in with Vercel or use an AI Gateway API key for team-private models.",
+            .no_credential => "Using the public model catalog; sign in with an OAuth provider or use an AI Gateway API key for team-private models.",
             .fx_login_team_required => "Choose a Vercel team to load its private models.",
             .fx_login_refresh_required => "Vercel sign-in must refresh before team-private models can load.",
             .credential_refresh_failed => "Vercel sign-in refresh failed; using the public model catalog.",

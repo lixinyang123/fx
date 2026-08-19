@@ -247,7 +247,7 @@ fn composeSignInPickerRow(
     );
     var label_buf: [512]u8 = undefined;
     const label = switch (row_index) {
-        0 => "   Sign in with Vercel",
+        0 => "   Sign in with an OAuth provider",
         1, 4 => "",
         2 => std.fmt.bufPrint(
             &label_buf,

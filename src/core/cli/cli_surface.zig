@@ -717,7 +717,7 @@ fn runNonInteractiveWithDeps(
                 cfg.url_opener,
             ) catch |err| {
                 const message = switch (err) {
-                    error.ClientIdMissing => "fx login: missing FX_OAUTH_CLIENT_ID; configure the fx Vercel App client id first\n",
+                    error.ClientIdMissing => "fx login: set FX_OAUTH_ISSUER_URL and FX_OAUTH_CLIENT_ID for your OAuth provider\n",
                     error.AccessDenied => "fx login: authorization denied\n",
                     error.ExpiredToken, error.LoginTimedOut => "fx login: authorization expired; run fx login again\n",
                     else => "fx login: failed to sign in\n",

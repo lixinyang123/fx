@@ -8,10 +8,10 @@ const secret = @import("secret.zig");
 
 const Allocator = std.mem.Allocator;
 
-pub const issuer = "https://vercel.com";
+pub const issuer_env = "FX_OAUTH_ISSUER_URL";
+pub const issuer = "";
 pub const client_id_env = "FX_OAUTH_CLIENT_ID";
-pub const default_client_id = "cl_zzh5hiOZbwJ9bfqEcYqPIJv3TaPaEYL0";
-const e2e_issuer_url_env = "FX_E2E_OAUTH_ISSUER_URL";
+pub const default_client_id = "";
 pub const auth_file_name = profile_paths.auth_file_name;
 const schema_version: i64 = 1;
 const max_auth_file_bytes: usize = 64 * 1024;
@@ -177,15 +177,19 @@ pub fn configuredClientId() ?[]const u8 {
     if (io_mod.getenv(client_id_env)) |value| {
         if (std.mem.trim(u8, value, " \t\r\n").len > 0) return value;
     }
-    return if (default_client_id.len == 0) null else default_client_id;
+    return null;
 }
 
 pub fn configuredIssuerUrl() ![]const u8 {
-    return selectIssuerUrl(io_mod.getenv(e2e_issuer_url_env));
+    return selectIssuerUrl(io_mod.getenv(issuer_env));
+}
+
+pub fn validateIssuerUrl(url: []const u8) !void {
+    _ = selectIssuerUrl(url);
 }
 
 pub fn isLoopbackE2EIssuer(url: []const u8) bool {
-    return !std.mem.eql(u8, url, issuer) and isLoopbackHttpUrl(url, true);
+    return isLoopbackHttpUrl(url, true);
 }
 
 pub fn validateE2EEndpoint(issuer_url: []const u8, endpoint: []const u8) !void {
@@ -195,9 +199,14 @@ pub fn validateE2EEndpoint(issuer_url: []const u8, endpoint: []const u8) !void {
 }
 
 fn selectIssuerUrl(override: ?[]const u8) ![]const u8 {
-    const raw = override orelse return issuer;
+    const raw = override orelse return error.OAuthIssuerMissing;
     const candidate = std.mem.trimEnd(u8, raw, "/");
-    if (!isLoopbackHttpUrl(candidate, true)) return error.InvalidE2EOAuthIssuer;
+    const uri = std.Uri.parse(candidate) catch return error.InvalidOAuthIssuer;
+    if (uri.user != null or uri.password != null or uri.host == null or
+        (!std.ascii.eqlIgnoreCase(uri.scheme, "https") and !isLoopbackHttpUrl(candidate, true)))
+    {
+        return error.InvalidOAuthIssuer;
+    }
     return candidate;
 }
 
@@ -398,9 +407,7 @@ pub fn parse(alloc: Allocator, bytes: []const u8) !Session {
     const version = object.get("version") orelse return error.InvalidAuthSession;
     if (version != .integer or version.integer != schema_version) return error.InvalidAuthSession;
     const saved_issuer = try requiredString(object, "issuer");
-    if (!std.mem.eql(u8, saved_issuer, issuer) and !isLoopbackE2EIssuer(saved_issuer)) {
-        return error.InvalidAuthSession;
-    }
+    _ = validateIssuerUrl(saved_issuer) catch return error.InvalidAuthSession;
 
     const expires_at_ms = try requiredInteger(object, "expires_at_ms");
     const owned_issuer = try alloc.dupe(u8, saved_issuer);

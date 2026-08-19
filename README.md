@@ -27,9 +27,11 @@ curl -fsSL https://fx.sh/setup.sh | bash
 
 ## Run fx
 
-To get started, sign in with Vercel:
+To get started, configure an OAuth provider:
 
 ```bash
+export FX_OAUTH_ISSUER_URL="https://your-provider.example.com"
+export FX_OAUTH_CLIENT_ID="your-client-id"
 fx login
 ```
 

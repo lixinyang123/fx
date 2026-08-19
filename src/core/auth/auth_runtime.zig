@@ -409,7 +409,7 @@ pub const PickerView = struct {
         return switch (choice) {
             .source => |source| credentials.sourceLabel(source),
             .action => |action| switch (action) {
-                .login => "Sign in with Vercel",
+                .login => "Sign in with an OAuth provider",
                 .setup => if (self.include_skip) "Add an API key" else "API key",
                 .change_team => "Change team",
                 .switch_credential => "Switch credential",
