@@ -488,7 +488,10 @@ fn completeSignIn(
     client_id: []const u8,
     token: *oauth.TokenSet,
 ) !TeamSelection {
-    var teams = fetchTeams(alloc, token.access_token, issuer_url) catch std.ArrayList(Team).empty;
+    var teams = fetchTeams(alloc, token.access_token, issuer_url) catch |err| switch (err) {
+        error.InvalidTeamsEndpoint => return err,
+        else => std.ArrayList(Team).empty,
+    };
     errdefer freeTeams(alloc, &teams);
     const now_ms = io_mod.milliTimestamp();
     const session = try take_login_session(alloc, issuer_url, client_id, token, null, now_ms);

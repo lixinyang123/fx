@@ -719,6 +719,7 @@ fn runNonInteractiveWithDeps(
                 const message = switch (err) {
                     error.ClientIdMissing => "fx login: set FX_OAUTH_ISSUER_URL and FX_OAUTH_CLIENT_ID for your OAuth provider\n",
                     error.AccessDenied => "fx login: authorization denied\n",
+                    error.InvalidTeamsEndpoint => "fx login: FX_OAUTH_TEAMS_URL must be an HTTPS URL\n",
                     error.ExpiredToken, error.LoginTimedOut => "fx login: authorization expired; run fx login again\n",
                     else => "fx login: failed to sign in\n",
                 };
