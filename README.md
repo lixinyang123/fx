@@ -41,6 +41,20 @@ Or add an AI Gateway API key:
 fx setup
 ```
 
+To use an OpenAI-compatible model provider, set its HTTPS chat-completions
+endpoint, API key, and model:
+
+```bash
+export FX_GATEWAY_CHAT_URL=https://api.example.com/v1/chat/completions
+export AI_GATEWAY_API_KEY=...
+export FX_MODEL=your-provider/your-model
+fx
+```
+
+`FX_GATEWAY_CHAT_URL` accepts HTTPS endpoints without embedded credentials or
+fragments. HTTP endpoints are limited to loopback addresses for local
+development.
+
 Run fx from a project:
 
 ```bash

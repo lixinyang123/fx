@@ -751,8 +751,12 @@ fn fetchCliModelCatalog(
 
 pub fn resolveChatUrl(fallback: []const u8, override: ?[]const u8) []const u8 {
     const candidate = override orelse return fallback;
-    // The chat URL carries the bearer token and full request payload; only a
-    // loopback HTTP override is trusted for local testing.
+    // The endpoint carries the bearer token and full request payload. Allow
+    // explicitly configured HTTPS providers, while keeping HTTP restricted to
+    // loopback development servers.
+    const uri = std.Uri.parse(candidate) catch return fallback;
+    if (uri.user != null or uri.password != null or uri.fragment != null) return fallback;
+    if (std.ascii.eqlIgnoreCase(uri.scheme, "https")) return candidate;
     if (!gateway_client.isLoopbackHttpUrl(candidate)) return fallback;
     return candidate;
 }
@@ -1913,12 +1917,22 @@ test "built-in gateway chat url honors loopback override before fallback" {
     );
 }
 
-test "built-in gateway chat url ignores untrusted overrides and falls back" {
+test "built-in gateway chat url accepts configured HTTPS providers" {
+    try std.testing.expectEqualStrings(
+        "https://api.example.com/v1/chat/completions",
+        resolveChatUrl(
+            "https://ai-gateway.vercel.sh/v3/ai/language-model",
+            "https://api.example.com/v1/chat/completions",
+        ),
+    );
+}
+
+test "built-in gateway chat url ignores unsafe overrides and falls back" {
     const fallback = "https://ai-gateway.vercel.sh/v3/ai/language-model";
     for ([_][]const u8{
-        "https://evil.example/chat",
         "http://evil.example/chat",
         "http://127.0.0.1:8080@evil.example/chat",
+        "https://evil.example/chat#fragment",
         "ftp://evil.example/chat",
         "not a url",
         "",
