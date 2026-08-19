@@ -979,7 +979,7 @@ fn fetchTeams(alloc: Allocator, access_token: []const u8, issuer_url: []const u8
     const configured_endpoint = io_mod.getenv(teams_endpoint_env) orelse return std.ArrayList(Team).empty;
     const endpoint = std.mem.trim(u8, configured_endpoint, " \t\r\n");
     if (endpoint.len == 0) return std.ArrayList(Team).empty;
-    oauth_session.validateIssuerUrl(endpoint) catch return error.InvalidTeamsEndpoint;
+    oauth_session.validateEndpointUrl(endpoint) catch return error.InvalidTeamsEndpoint;
     var client: std.http.Client = .{ .allocator = alloc, .io = io_mod.getIo() };
     defer client.deinit();
 
@@ -1014,7 +1014,7 @@ fn fetchTeamsFromJsHost(
     const configured_endpoint = io_mod.getenv(teams_endpoint_env) orelse return std.ArrayList(Team).empty;
     const endpoint = std.mem.trim(u8, configured_endpoint, " \t\r\n");
     if (endpoint.len == 0) return std.ArrayList(Team).empty;
-    oauth_session.validateIssuerUrl(endpoint) catch return error.InvalidTeamsEndpoint;
+    oauth_session.validateEndpointUrl(endpoint) catch return error.InvalidTeamsEndpoint;
 
     var response = try js_host_auth.executeBearerGet(alloc, endpoint, access_token);
     defer response.deinit(alloc);

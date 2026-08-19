@@ -9,7 +9,6 @@ const secret = @import("secret.zig");
 const Allocator = std.mem.Allocator;
 
 pub const issuer_env = "FX_OAUTH_ISSUER_URL";
-pub const issuer = "";
 pub const client_id_env = "FX_OAUTH_CLIENT_ID";
 pub const default_client_id = "";
 pub const auth_file_name = profile_paths.auth_file_name;
@@ -186,6 +185,10 @@ pub fn configuredIssuerUrl() ![]const u8 {
 
 pub fn validateIssuerUrl(url: []const u8) !void {
     _ = selectIssuerUrl(url) catch return error.InvalidOAuthIssuer;
+}
+
+pub fn validateEndpointUrl(url: []const u8) !void {
+    _ = selectIssuerUrl(url) catch return error.InvalidOAuthEndpoint;
 }
 
 pub fn isLoopbackE2EIssuer(url: []const u8) bool {
