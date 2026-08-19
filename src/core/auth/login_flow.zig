@@ -975,7 +975,7 @@ fn discardStdinLine() void {
 }
 
 fn fetchTeams(alloc: Allocator, access_token: []const u8, issuer_url: []const u8) !std.ArrayList(Team) {
-    if (comptime host_target.is_wasm) return fetchTeamsFromJsHost(alloc, access_token, issuer_url);
+    if (comptime host_target.is_wasm) return fetchTeamsFromJsHost(alloc, access_token);
     const configured_endpoint = io_mod.getenv(teams_endpoint_env) orelse return std.ArrayList(Team).empty;
     const endpoint = std.mem.trim(u8, configured_endpoint, " \t\r\n");
     if (endpoint.len == 0) return std.ArrayList(Team).empty;
@@ -1008,9 +1008,7 @@ fn fetchTeams(alloc: Allocator, access_token: []const u8, issuer_url: []const u8
 fn fetchTeamsFromJsHost(
     alloc: Allocator,
     access_token: []const u8,
-    issuer_url: []const u8,
 ) !std.ArrayList(Team) {
-    _ = issuer_url;
     const configured_endpoint = io_mod.getenv(teams_endpoint_env) orelse return std.ArrayList(Team).empty;
     const endpoint = std.mem.trim(u8, configured_endpoint, " \t\r\n");
     if (endpoint.len == 0) return std.ArrayList(Team).empty;
